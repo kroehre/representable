@@ -78,7 +78,6 @@ class XmlTest < MiniTest::Spec
       end
     end
 
-
     describe "#to_node" do
       it "returns Nokogiri node" do
         node = Band.new("Rise Against").to_node
@@ -120,6 +119,51 @@ class XmlTest < MiniTest::Spec
         assert_kind_of XML::Binding::Hash, XML::Binding.build_for(Def.new(:band, :hash => :true), nil, nil)
       end
     end
+
+    describe 'Namespaces' do
+      before do
+        @NamespacedBand = Class.new do
+          include Representable::XML
+          self.representation_wrap = :band
+          namespaces({
+            'bands' => 'http://test.org/bands',
+            'songs' => 'http://test.org/songs'
+          })
+          default_namespace('http://test.org/bands')
+          namespace('bands')
+          property :name
+          property :song, as: "songs:song"
+          attr_accessor :name, :song
+        end
+        @namespaced_band = @NamespacedBand.new
+      end
+      describe "#from_xml" do
+        it "parses XML and assigns properties" do
+          @xml = %{
+            <ns1:band xmlns="http://test.org/bands" xmlns:ns1="http://test.org/bands" xmlns:ns2="http://test.org/songs">
+              <name>Nofx</name>
+              <ns2:song>Linoleum</ns2:song>
+            </ns1:band>
+          }
+          @namespaced_band.from_xml(@xml)
+          assert_equal ["Nofx", "Linoleum"], [@namespaced_band.name, @namespaced_band.song]
+        end
+      end
+      describe "#to_xml" do
+        it "properly serializes xml" do
+          @namespaced_band.name = "Nofx"
+          @namespaced_band.song = "Linoleum"
+          @expected_xml = %{
+            <bands:band xmlns="http://test.org/bands" xmlns:bands="http://test.org/bands" xmlns:songs="http://test.org/songs">
+              <name>Nofx</name>
+              <songs:song>Linoleum</songs:song>
+            </bands:band>
+          }
+          assert_xml_equal @namespaced_band.to_xml, @expected_xml
+        end
+      end
+    end
+
 
 
     describe "DCI" do

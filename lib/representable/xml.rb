@@ -20,6 +20,18 @@ module Representable
         representable_attrs.options[:remove_namespaces] = true
       end
 
+      def namespaces(namespaces)
+        representable_attrs.options[:namespaces] = namespaces
+      end
+
+      def default_namespace(namespace)
+        representable_attrs.options[:default_namespace] = namespace
+      end
+
+      def namespace(namespace)
+        representable_attrs.options[:namespace] = namespace
+      end
+
       def collection_representer_class
         Collection
       end
@@ -32,15 +44,20 @@ module Representable
     end
 
     def from_node(node, options={})
+      options.merge!(namespaces: namespaces)
       update_properties_from(node, options, Binding)
     end
 
     # Returns a Nokogiri::XML object representing this object.
     def to_node(options={})
       options[:doc] ||= Nokogiri::XML::Document.new
-      root_tag = options[:wrap] || representation_wrap(options)
-
-      create_representation_with(Nokogiri::XML::Node.new(root_tag.to_s, options[:doc]), options, Binding)
+      root_tag = options[:wrap]
+      if root_tag.blank?
+        root_tag = representation_wrap(options)
+        root_tag = "#{namespace}:#{root_tag}" unless namespace.blank?
+      end
+      node = create_node(root_tag.to_s, options[:doc])
+      create_representation_with(node, options, Binding)
     end
 
     def to_xml(*args)
@@ -58,6 +75,25 @@ module Representable
 
       node.remove_namespaces! if remove_namespaces?
       node.root
+    end
+
+    def namespace
+      representable_attrs.options[:namespace]
+    end
+
+    def namespaces
+      representable_attrs.options.fetch(:namespaces, {})
+    end
+
+    def create_node(name, document)
+      node = Nokogiri::XML::Node.new(name, document)
+      if default_namespace = representable_attrs.options[:default_namespace]
+        node.default_namespace = default_namespace
+      end
+      namespaces.each do |prefix, href|
+        node.add_namespace_definition(prefix.to_s, href)
+      end
+      node
     end
   end
 end

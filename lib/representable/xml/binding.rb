@@ -62,9 +62,14 @@ module Representable
       end
 
       def find_nodes(doc)
-        selector  = xpath
-        selector  = "#{self[:wrap]}/#{xpath}" if self[:wrap]
-        nodes     = doc.xpath(selector)
+        selector   = xpath
+        namespaces = user_options[:namespaces]
+        if doc.namespaces.has_key?('xmlns') && !selector.include?(':')
+          selector = "xmlns:#{xpath}"
+          namespaces = doc.namespaces
+        end
+        selector   = "#{self[:wrap]}/#{xpath}" if self[:wrap]
+        nodes      = doc.xpath(selector, namespaces)
       end
 
       def node_for(parent, name)
