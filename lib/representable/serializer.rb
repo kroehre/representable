@@ -28,7 +28,8 @@ module Representable
     end
 
     def marshal(object, user_options)
-      object.send(@binding.serialize_method, user_options.merge!({:wrap => false}))
+      user_options.merge!(wrap: @binding.evaluate_option(:as) || false)
+      object.send(@binding.serialize_method, user_options)
     end
 
 
