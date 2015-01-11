@@ -61,15 +61,20 @@ module Representable
         as
       end
 
+      def namespace(selector)
+        return selector unless decorator.default_namespace.present?
+        return selector if selector.include?(':')
+        "xmlns:#{selector}"
+      end
+
       def find_nodes(doc)
-        selector   = xpath
-        namespaces = user_options[:namespaces]
-        if doc.namespaces.has_key?('xmlns') && !selector.include?(':')
-          selector = "xmlns:#{xpath}"
-          namespaces = doc.namespaces
+        namespaces = decorator.namespaces
+        if decorator.default_namespace.present?
+          namespaces.merge!('xmlns' => decorator.default_namespace)
         end
-        selector   = "#{self[:wrap]}/#{xpath}" if self[:wrap]
-        nodes      = doc.xpath(selector, namespaces)
+        selector = namespace(xpath)
+        selector = "#{namespace(self[:wrap].to_s)}/#{xpath}" if self[:wrap]
+        nodes    = doc.xpath(selector, namespaces)
       end
 
       def node_for(parent, name)

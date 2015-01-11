@@ -44,7 +44,6 @@ module Representable
     end
 
     def from_node(node, options={})
-      options.merge!(namespaces: namespaces)
       update_properties_from(node, options, Binding)
     end
 
@@ -64,6 +63,18 @@ module Representable
       to_node(*args).to_s
     end
 
+    def namespace
+      representable_attrs.options[:namespace]
+    end
+
+    def namespaces
+      representable_attrs.options.fetch(:namespaces, {})
+    end
+
+    def default_namespace
+      representable_attrs.options[:default_namespace]
+    end
+
   private
     def remove_namespaces?
       # TODO: make local Config easily extendable so you get Config#remove_ns? etc.
@@ -77,17 +88,9 @@ module Representable
       node.root
     end
 
-    def namespace
-      representable_attrs.options[:namespace]
-    end
-
-    def namespaces
-      representable_attrs.options.fetch(:namespaces, {})
-    end
-
     def create_node(name, document)
       node = Nokogiri::XML::Node.new(name, document)
-      if default_namespace = representable_attrs.options[:default_namespace]
+      if default_namespace.present?
         node.default_namespace = default_namespace
       end
       namespaces.each do |prefix, href|
