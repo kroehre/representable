@@ -68,17 +68,23 @@ module Representable
       end
 
       def find_nodes(doc)
-        namespaces = decorator.namespaces
-        if decorator.default_namespace.present?
-          namespaces.merge!('xmlns' => decorator.default_namespace)
-        end
         selector = namespace(xpath)
-        selector = "#{namespace(self[:wrap].to_s)}/#{xpath}" if self[:wrap]
-        nodes    = doc.xpath(selector, namespaces)
+        if self[:wrap]
+          selector = "#{namespace(self[:wrap].to_s)}/#{xpath}"
+        end
+        namespaces = doc.namespaces
+        if decorator.default_namespace.present?
+          namespaces = doc.namespaces.merge('xmlns' => decorator.default_namespace)
+        end
+        nodes = doc.xpath(selector, namespaces)
       end
 
       def node_for(parent, name)
-        Nokogiri::XML::Node.new(name.to_s, parent.document)
+        node = Nokogiri::XML::Node.new(name.to_s, parent.document)
+        if decorator.default_namespace.present?
+          node.default_namespace = decorator.default_namespace
+        end
+        node
       end
 
       def content_for(node) # TODO: move this into a ScalarDecorator.

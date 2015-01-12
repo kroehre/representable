@@ -44,6 +44,7 @@ module Representable
     end
 
     def from_node(node, options={})
+      add_namespaces(node)
       update_properties_from(node, options, Binding)
     end
 
@@ -93,10 +94,14 @@ module Representable
       if default_namespace.present?
         node.default_namespace = default_namespace
       end
+      add_namespaces(node)
+      node
+    end
+
+    def add_namespaces(node)
       namespaces.each do |prefix, href|
         node.add_namespace_definition(prefix.to_s, href)
       end
-      node
     end
   end
 end
